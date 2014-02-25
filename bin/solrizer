@@ -89,15 +89,19 @@ begin
 
       puts @msg.headers.inspect
       puts "\nPID: #{@msg.headers["pid"]}\n"
-      if ["addDatastream", "addRelationship","ingest","modifyDatastreamByValue","modifyDatastreamByReference","modifyObject","purgeDatastream","purgeRelationship"].include? method
-        ActiveFedora::Base.find(@msg.headers["pid"], cast: true).update_index
-      elsif method == "purgeObject"
-        ActiveFedora::SolrService.instance.conn.delete_by_id(pid)
-      else
-        $stderr.puts "Unknown Method: #{method}"
+      begin
+        if ["addDatastream", "addRelationship","ingest","modifyDatastreamByValue","modifyDatastreamByReference","modifyObject","purgeDatastream","purgeRelationship"].include? method
+          ActiveFedora::Base.find(@msg.headers["pid"], cast: true).update_index
+        elsif method == "purgeObject"
+          ActiveFedora::SolrService.instance.conn.delete_by_id(pid)
+        else
+          $stderr.puts "Unknown Method: #{method}"
+        end
+        puts  "updated solr index for #{@msg.headers["pid"]}\n"
+        @conn.ack @msg.headers["message-id"]
+      rescue ActiveFedora::ObjectNotFoundError
+        puts "\nPID: #{@msg.headers["pid"]} not found\n"
       end
-      puts  "updated solr index for #{@msg.headers["pid"]}\n"
-      @conn.ack @msg.headers["message-id"]
   end
   @conn.join
 
