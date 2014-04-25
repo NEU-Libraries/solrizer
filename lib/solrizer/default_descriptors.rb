@@ -117,9 +117,11 @@ module Solrizer
     def self.iso8601_date(value)
       begin 
         if value.is_a?(Date) || value.is_a?(Time)
-          DateTime.parse(value.to_s).to_time.utc.strftime('%Y-%m-%dT%H:%M:%SZ') 
+          # DateTime.parse(value.to_s).to_time.utc.strftime('%Y-%m-%dT%H:%M:%SZ') 
+          value.to_formatted_s(:iso8601)
         elsif !value.empty?
-          DateTime.parse(value).to_time.utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+          # DateTime.parse(value).to_time.utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+          value.to_date.to_formatted_s(:iso8601)
         end
       rescue ArgumentError => e
         raise ArgumentError, "Unable to parse `#{value}' as a date-time object"
