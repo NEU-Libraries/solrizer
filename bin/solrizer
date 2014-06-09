@@ -104,8 +104,10 @@ begin
       #rescue ActiveFedora::ObjectNotFoundError
       rescue Exception => error
         #puts "\nPID: #{@msg.headers["pid"]} not found\n"
-        logger.warn "Error processing \nPID: #{@msg.headers["pid"]}\n"
-        logger.warn "#{error.backtrace}"
+        logger.warn "Error processing \nPID: #{@msg.headers["pid"]}"
+        logger.warn "#{$!.inspect}"
+        logger.warn "#{$!}"
+        logger.warn "#{$@}"
       end
   end
   @conn.join
