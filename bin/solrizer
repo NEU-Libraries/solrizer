@@ -3,6 +3,7 @@
 require 'rubygems'
 require 'optparse'
 require 'stomp'
+require 'logger'
 
 options = {}
 
@@ -83,7 +84,7 @@ begin
   
   @conn.subscribe(@destination, {"activemq.subscriptionName" => @clientid, :ack =>"client" })
   while true
-      logger = Logger.new File.new('log/solrizer.log')
+      logger = Logger.new('/home/drs/log/solrizer.log')
       @msg = @conn.receive
       pid = @msg.headers["pid"]
       method = @msg.headers["methodName"]
