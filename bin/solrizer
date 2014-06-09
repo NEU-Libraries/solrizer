@@ -83,6 +83,7 @@ begin
   
   @conn.subscribe(@destination, {"activemq.subscriptionName" => @clientid, :ack =>"client" })
   while true
+      logger = Logger.new File.new('log/solrizer.log')
       @msg = @conn.receive
       pid = @msg.headers["pid"]
       method = @msg.headers["methodName"]
@@ -99,8 +100,11 @@ begin
         end
         puts  "updated solr index for #{@msg.headers["pid"]}\n"
         @conn.ack @msg.headers["message-id"]
-      rescue ActiveFedora::ObjectNotFoundError
-        puts "\nPID: #{@msg.headers["pid"]} not found\n"
+      #rescue ActiveFedora::ObjectNotFoundError
+      rescue Exception => error
+        #puts "\nPID: #{@msg.headers["pid"]} not found\n"
+        logger.warn "Error processing \nPID: #{@msg.headers["pid"]}\n"
+        logger.warn "#{error.backtrace}"
       end
   end
   @conn.join
