@@ -97,8 +97,8 @@ begin
         elsif method == "purgeObject"
           #ActiveFedora::SolrService.instance.conn.delete_by_id(pid)
           
-          #Less insane fix
-          ActiveFedora::SolrService.instance.conn.delete_by_query 'id:"#{pid}"'
+          #Less insane fix - ...er...fixed
+          ActiveFedora::SolrService.instance.conn.delete_by_query "id:\"#{pid}\""
           ActiveFedora::SolrService.instance.conn.commit
         else
           $stderr.puts "Unknown Method: #{method}"
