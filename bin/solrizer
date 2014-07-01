@@ -97,9 +97,9 @@ begin
         elsif method == "purgeObject"
           #ActiveFedora::SolrService.instance.conn.delete_by_id(pid)
           
-          #MASSIVE HACK
-          ePid = CGI.escape(pid)
-          `/usr/bin/curl http://localhost:3000/solr/update\?commit\=true -H \"Content-Type: text/xml\" --data-binary '<delete><query>id:\"#{ePid}\"</query></delete>'`
+          #Less insane fix
+          ActiveFedora::SolrService.instance.conn.delete_by_query 'id:"#{pid}"'
+          ActiveFedora::SolrService.instance.conn.commit
         else
           $stderr.puts "Unknown Method: #{method}"
         end
