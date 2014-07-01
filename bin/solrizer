@@ -95,7 +95,11 @@ begin
         if ["addDatastream", "addRelationship","ingest","modifyDatastreamByValue","modifyDatastreamByReference","modifyObject","purgeDatastream","purgeRelationship"].include? method
           ActiveFedora::Base.find(@msg.headers["pid"], cast: true).update_index
         elsif method == "purgeObject"
-          ActiveFedora::SolrService.instance.conn.delete_by_id(pid)
+          #ActiveFedora::SolrService.instance.conn.delete_by_id(pid)
+          
+          #MASSIVE HACK
+          ePid = CGI.escape(pid)
+          `/usr/bin/curl http://localhost:3000/solr/update\?commit\=true -H \"Content-Type: text/xml\" --data-binary '<delete><query>id:\"#{ePid}\"</query></delete>'`
         else
           $stderr.puts "Unknown Method: #{method}"
         end
