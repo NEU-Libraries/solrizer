@@ -109,9 +109,9 @@ begin
       rescue Exception => error
         #puts "\nPID: #{@msg.headers["pid"]} not found\n"
         logger.warn "#{Time.now} - Error processing \nPID: #{@msg.headers["pid"]}"
-        logger.warn "#{Time.now} - {$!.inspect}"
-        logger.warn "#{Time.now} - {$!}"
-        logger.warn "#{Time.now} - {$@}"
+        logger.warn "{$!.inspect}"
+        logger.warn "{$!}"
+        logger.warn "{$@}"
       end
   end
   @conn.join
