@@ -101,17 +101,17 @@ begin
           ActiveFedora::SolrService.instance.conn.delete_by_query "id:\"#{pid}\""
           ActiveFedora::SolrService.instance.conn.commit
         else
-          $stderr.puts "Unknown Method: #{method}"
+          $stderr.puts "{Time.now} - Unknown Method: #{method}"
         end
         puts  "updated solr index for #{@msg.headers["pid"]}\n"
         @conn.ack @msg.headers["message-id"]
       #rescue ActiveFedora::ObjectNotFoundError
       rescue Exception => error
         #puts "\nPID: #{@msg.headers["pid"]} not found\n"
-        logger.warn "Error processing \nPID: #{@msg.headers["pid"]}"
-        logger.warn "#{$!.inspect}"
-        logger.warn "#{$!}"
-        logger.warn "#{$@}"
+        logger.warn "#{Time.now} - Error processing \nPID: #{@msg.headers["pid"]}"
+        logger.warn "#{Time.now} - {$!.inspect}"
+        logger.warn "#{Time.now} - {$!}"
+        logger.warn "#{Time.now} - {$@}"
       end
   end
   @conn.join
