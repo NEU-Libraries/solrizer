@@ -14,7 +14,7 @@ optparse = OptionParser.new do|opts|
   opts.on( '--hydra_home PATH', 'Load the Hydra instance  at this path' ) do |path|
     if File.exist?(File.join(path,"config","environment.rb"))
       options[:hydra_home] = path
-    else 
+    else
       puts "#{path} does not appear to be a valid rails home"
       exit
     end
@@ -45,6 +45,11 @@ optparse = OptionParser.new do|opts|
     options[:destination] = destination
   end
 
+  options[:solr_url] = nil
+  opts.on('-s','--solr_url URL', 'Solr URL to connect to') do |solr_url|
+    options[:solr_url] = solr_url
+  end
+
   opts.on('-h', '--help', 'Display this screen') do
     puts opts
     exit
@@ -66,10 +71,15 @@ else
   exit 1
 end
 
+if options[:solr_url] == nil
+  $stderr.puts "The --solr_url URL option is mandatory. Please provide the URL to a valid Solr instance."
+  exit 1
+end
+
 puts "loading listener"
 
 begin
-  @port = options[:port] 
+  @port = options[:port]
   @host = options[:host]
   @user = options[:user]
   @password = options[:password]
@@ -77,42 +87,45 @@ begin
   @clientid = "fedora_stomper"
   @destination = options[:destination]
 
+  @logger = Logger.new('/home/drs/log/solrizer.log')
+
+  solr_host = options[:solr_url]
+  args = {:read_timeout => 120, :open_timeout => 120}
+  args.merge!(:url=>solr_host)
+  @solr_conn = RSolr.connect args
 
   $stderr.print "Connecting to stomp://#{@host}:#{@port} as #{@user}\n"
   @conn = Stomp::Connection.open(@user, @password, @host, @port, @reliable, 5, {"client-id" => @clientid} )
   $stderr.print "Getting output from #{@destination}\n"
-  
+
   @conn.subscribe(@destination, {"activemq.subscriptionName" => @clientid, :ack =>"client" })
   while true
-      logger = Logger.new('/home/drs/log/solrizer.log')
-      @msg = @conn.receive
-      pid = @msg.headers["pid"]
-      method = @msg.headers["methodName"]
+    @msg = @conn.receive
+    pid = @msg.headers["pid"]
+    method = @msg.headers["methodName"]
 
-      puts @msg.headers.inspect
-      puts "\nPID: #{@msg.headers["pid"]}\n"
-      begin
-        if ["addDatastream", "addRelationship","ingest","modifyDatastreamByValue","modifyDatastreamByReference","modifyObject","purgeDatastream","purgeRelationship"].include? method
-          ActiveFedora::Base.find(@msg.headers["pid"], cast: true).update_index
-        elsif method == "purgeObject"
-          #ActiveFedora::SolrService.instance.conn.delete_by_id(pid)
-          
-          #Less insane fix - ...er...fixed
-          ActiveFedora::SolrService.instance.conn.delete_by_query "id:\"#{pid}\""
-          ActiveFedora::SolrService.instance.conn.commit
-        else
-          $stderr.puts "{Time.now} - Unknown Method: #{method}"
-        end
-        puts  "updated solr index for #{@msg.headers["pid"]}\n"
-        @conn.ack @msg.headers["message-id"]
-      #rescue ActiveFedora::ObjectNotFoundError
-      rescue Exception => error
-        #puts "\nPID: #{@msg.headers["pid"]} not found\n"
-        logger.warn "#{Time.now} - Error processing \nPID: #{@msg.headers["pid"]}"
-        logger.warn "#{Time.now} - #{$!.inspect}"
-        logger.warn "#{Time.now} - #{$!}"
-        logger.warn "#{Time.now} - #{$@}"
+    begin
+      if ["addDatastream", "addRelationship","ingest","modifyDatastreamByValue","modifyDatastreamByReference","modifyObject","purgeDatastream","purgeRelationship"].include? method
+        # ActiveFedora::Base.find(@msg.headers["pid"], cast: true).update_index
+        doc = ActiveFedora::Base.find(@msg.headers["pid"], cast: true).to_solr
+        @solr_conn.add(doc)
+        @solr_conn.commit
+      elsif method == "purgeObject"
+        # ActiveFedora::SolrService.instance.conn.delete_by_query "id:\"#{pid}\""
+        # ActiveFedora::SolrService.instance.conn.commit
+        @solr_conn.delete_by_query "id:\"#{pid}\""
+        @solr_conn.commit
+      else
+        $stderr.puts "{Time.now} - Unknown Method: #{method}"
       end
+      puts  "updated solr index for #{@msg.headers["pid"]}\n"
+      @conn.ack @msg.headers["message-id"]
+    rescue Exception => error
+      @logger.warn "#{Time.now} - Error processing \nPID: #{@msg.headers["pid"]}"
+      @logger.warn "#{Time.now} - #{$!.inspect}"
+      @logger.warn "#{Time.now} - #{$!}"
+      @logger.warn "#{Time.now} - #{$@}"
+    end
   end
   @conn.join
 
