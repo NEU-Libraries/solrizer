@@ -125,8 +125,9 @@ begin
       @logger.warn "#{Time.now} - #{$!}"
       @logger.warn "#{Time.now} - #{$@}"
     end
+    # Always progress
+    @conn.ack @msg.headers["message-id"]
   end
-  @conn.ack @msg.headers["message-id"]
   @conn.join
 
 rescue Exception => e
