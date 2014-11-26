@@ -119,7 +119,6 @@ begin
         $stderr.puts "{Time.now} - Unknown Method: #{method}"
       end
       puts  "updated solr index for #{@msg.headers["pid"]}\n"
-      @conn.ack @msg.headers["message-id"]
     rescue Exception => error
       @logger.warn "#{Time.now} - Error processing \nPID: #{@msg.headers["pid"]}"
       @logger.warn "#{Time.now} - #{$!.inspect}"
@@ -127,6 +126,7 @@ begin
       @logger.warn "#{Time.now} - #{$@}"
     end
   end
+  @conn.ack @msg.headers["message-id"]
   @conn.join
 
 rescue Exception => e
