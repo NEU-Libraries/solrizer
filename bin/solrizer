@@ -49,6 +49,11 @@ optparse = OptionParser.new do|opts|
   opts.on('-s','--solr_url URL', 'Solr URL to connect to') do |solr_url|
     options[:solr_url] = solr_url
   end
+  
+  options[:log] = '/home/drs/log/solrizer.log'
+  opts.on('-l','--log FILE', 'Where to log solrizer output') do |log_location|
+    options[:log] = log_location
+  end  
 
   opts.on('-h', '--help', 'Display this screen') do
     puts opts
@@ -58,6 +63,8 @@ end
 
 optparse.parse!
 
+@logger = Logger.new(options[:log])
+
 begin; require 'rubygems'; rescue; end
 
 if options[:hydra_home]
@@ -65,14 +72,14 @@ if options[:hydra_home]
   Dir.chdir(options[:hydra_home])
   require File.join(options[:hydra_home],"config","environment.rb")
 
-  puts "app loaded"
+  @logger.info "app loaded"
 else
-  $stderr.puts "The --hydra_home PATH option is mandatory. Please provide the path to the root of a valid Hydra instance."
+  @logger.warn "The --hydra_home PATH option is mandatory. Please provide the path to the root of a valid Hydra instance."
   exit 1
 end
 
 if options[:solr_url] == nil
-  $stderr.puts "The --solr_url URL option is mandatory. Please provide the URL to a valid Solr instance."
+  @logger.warn "The --solr_url URL option is mandatory. Please provide the URL to a valid Solr instance."
   exit 1
 end
 
@@ -87,16 +94,14 @@ begin
   @clientid = "fedora_stomper"
   @destination = options[:destination]
 
-  @logger = Logger.new('/home/drs/log/solrizer.log')
-
   solr_host = options[:solr_url]
   args = {:read_timeout => 120, :open_timeout => 120}
   args.merge!(:url=>solr_host)
   @solr_conn = RSolr.connect args
 
-  $stderr.print "Connecting to stomp://#{@host}:#{@port} as #{@user}\n"
+  @logger.info "Connecting to stomp://#{@host}:#{@port} as #{@user}\n"
   @conn = Stomp::Connection.open(@user, @password, @host, @port, @reliable, 5, {"client-id" => @clientid} )
-  $stderr.print "Getting output from #{@destination}\n"
+  @logger.info "Getting output from #{@destination}\n"
 
   @conn.subscribe(@destination, {"activemq.subscriptionName" => @clientid, :ack =>"client" })
   while true
@@ -116,7 +121,7 @@ begin
         @solr_conn.delete_by_query "id:\"#{pid}\""
         @solr_conn.commit
       else
-        $stderr.puts "{Time.now} - Unknown Method: #{method}"
+        @logger.warn "{Time.now} - Unknown Method: #{method}"
       end
       puts  "updated solr index for #{@msg.headers["pid"]}\n"
     rescue Exception => error
