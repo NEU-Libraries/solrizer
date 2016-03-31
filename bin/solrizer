@@ -114,7 +114,7 @@ begin
         # ActiveFedora::Base.find(@msg.headers["pid"], cast: true).update_index
         doc = ActiveFedora::Base.find(@msg.headers["pid"], cast: true).to_solr
         @solr_conn.add(doc)
-        @solr_conn.commit
+        # @solr_conn.commit
       elsif method == "purgeObject"
         # ActiveFedora::SolrService.instance.conn.delete_by_query "id:\"#{pid}\""
         # ActiveFedora::SolrService.instance.conn.commit
