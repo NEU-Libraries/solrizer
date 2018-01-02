@@ -90,7 +90,7 @@ begin
   @host = options[:host]
   @user = options[:user]
   @password = options[:password]
-  @reliable = true
+  @reliable = false
   @clientid = "fedora_stomper"
   @destination = options[:destination]
 
@@ -105,6 +105,11 @@ begin
 
   @conn.subscribe(@destination, {"activemq.subscriptionName" => @clientid, :ack =>"client" })
   while true
+    if @conn.closed?
+      @conn = Stomp::Connection.open(@user, @password, @host, @port, @reliable, 5, {"client-id" => @clientid} )
+      @conn.subscribe(@destination, {"activemq.subscriptionName" => @clientid, :ack =>"client" })
+    end
+    
     @msg = @conn.receive
     pid = @msg.headers["pid"]
     method = @msg.headers["methodName"]
