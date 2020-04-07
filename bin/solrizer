@@ -124,7 +124,7 @@ begin
         # ActiveFedora::SolrService.instance.conn.delete_by_query "id:\"#{pid}\""
         # ActiveFedora::SolrService.instance.conn.commit
         @solr_conn.delete_by_query "id:\"#{pid}\""
-        @solr_conn.commit
+        # @solr_conn.commit
       else
         @logger.warn "{Time.now} - Unknown Method: #{method}"
       end
